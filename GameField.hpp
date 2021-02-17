@@ -11,21 +11,21 @@ enum states {
 
 class GameField {
 	// optional:
-	int field[3][3];
-	int free;
+	int **field;
+	int cols, rows;
+	int free_fields;
 	int win_length;
 
 	// non-optional:
 	int state;
 	int who_move;
 public:
-	GameField() : field{0}, free(9), win_length(3), state(G_NONE),
-		who_move(G_XPLAYER) { }
-	~GameField() { }
+	GameField(int a_cols, int a_rows, int a_lwin);
+	~GameField();
 	int GetState() { return state; }
 
-	bool CanMove(int x, int y);
-	void Move(int x, int y);
+	bool CanMove(int y, int x);
+	void Move(int y, int x);
 
 private:
 	void UpdateState();
