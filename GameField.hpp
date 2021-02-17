@@ -28,9 +28,9 @@ public:
 	void Move(int y, int x);
 
 private:
-	void UpdateState();
-	int ScanRows();
-	int ScanCols();
+	void UpdateState(int y, int x);
+	int ScanRowsAround(int y, int x);
+	int ScanColsAround(int y, int x);
 	int ScanDiags();
 };
 

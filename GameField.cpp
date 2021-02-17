@@ -39,58 +39,76 @@ void GameField::Move(int y, int x)
 	who_move = -who_move; // change player
 	free_fields--;
 
-	UpdateState();
+	UpdateState(y, x);
 }
 
-void GameField::UpdateState() 
+void GameField::UpdateState(int y, int x) 
 {
-	int tmp;
-
 	if(!free_fields) {
 		state = G_DRAW;
 		return;
 	}
-	tmp = ScanRows();
-	if(tmp) {
-		state = tmp;
+
+	if((state = ScanRowsAround(y, x)) != G_NONE)
 		return;
-	}
-	tmp = ScanCols();
-	if(tmp) {
-		state = tmp;
+	if((state = ScanColsAround(y, x)) != G_NONE)
 		return;
-	}
-	tmp = ScanDiags();
-	if(tmp) {
-		state = tmp;
+	if((state = ScanDiags()) != G_NONE)
 		return;
-	}
 }
 
-/* This version is a dummy */
-int GameField::ScanRows()
+int GameField::ScanRowsAround(int y, int x)
 {
-	int i;
-	for(i = 0; i < 3; i++) {
-		if(field[i][0] == field[i][1] && field[i][1] == field[i][2] &&
-				field[i][1] != G_EMPTY)
-			return field[i][1];
+	int i, n;
+	int player = field[y][x];
+	// ray left
+	for(i = x, n = 0; i >= 0; i--) {
+		if(player == field[y][i]) {
+			n++;
+			if(n == win_length)
+				return player;
+		}
+		else break;
 	}
 
-	return 0;
+	// ray right
+	for(i = x; i < rows; i++) {
+		if(player == field[y][i]) {
+			n++;
+			if(n == win_length)
+				return player;
+		}
+		else break;
+	}
+
+	return G_NONE;
 }
 
-/* This version is a dummy */ 
-int GameField::ScanCols()
+int GameField::ScanColsAround(int y, int x)
 {
-	int i;
-	for(i = 0; i < 3; i++) {
-		if(field[0][i] == field[1][i] && field[1][i] == field[2][i] &&
-				field[1][i] != G_EMPTY)
-			return field[1][i];
+	int i, n;
+	int player = field[y][x];
+	// ray up
+	for(i = y, n = 0; i >= 0; i--) {
+		if(player == field[i][x]) {
+			n++;
+			if(n == win_length)
+				return player;
+		}
+		else break;
 	}
 
-	return 0;
+	// ray down
+	for(i = y; i < cols; i++) {
+		if(player == field[i][x]) {
+			n++;
+			if(n == win_length)
+				return player;
+		}
+		else break;
+	}
+
+	return G_NONE;
 }
 
 /* This version is a dummy */
