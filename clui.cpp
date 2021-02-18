@@ -2,6 +2,8 @@
 
 #include "GameField.hpp"
 
+#define NC_MOVE_X 2
+#define NC_MOVE_Y 2
 #define SYMBOL_PLAYERONE 'x'
 #define SYMBOL_PLAYERTWO 'o'
 
@@ -43,15 +45,29 @@ void dbgprint(const char *msg)
 
 void drawGame(int cols, int rows, int symbol)
 {
-	/* MAKE: draw for custom cols and rows */
-	mvprintw(0, 0, "012");
-	mvprintw(1, 0, "345");
-	mvprintw(2, 0, "678");
+	int i, j;
+	for(j = 0; j < cols * 2 - 1; j++) {
+		move(j, 0);
+		if(j % 2 == 0) {
+			addch('~');
+			for(i = 1; i < rows; i++) {
+				addch('|');
+				addch('~');
+			}
+		}
+		else {
+			addch('-');
+			for(i = 1; i < rows; i++) {
+				addch('|');
+				addch('-');
+			}
+		}
+	}
 
 	min_y = 0;
-	max_y = cols-1;
+	max_y = cols * 2 - 2;
 	min_x = 0;
-	max_x = rows-1; 
+	max_x = rows * 2 - 2; 
 
 	cursor_y = max_y / 2;
 	cursor_x = max_x / 2;
@@ -74,13 +90,16 @@ void printMove(int y, int x, int symbol)
 	updateCursor();
 }
 
-void handleMove()
+void gameMove()
 {
-	if(!game_field->CanMove(cursor_y, cursor_x)) {
+	int game_y = cursor_y > 0 ? cursor_y - cursor_y / 2 : 0;
+	int game_x = cursor_x > 0 ? cursor_x - cursor_x / 2 : 0;
+
+	if(!game_field->CanMove(game_y, game_x)) {
 		dbgprint("yet 'x' or 'o'");
 		return;
 	}
-	game_field->Move(cursor_y, cursor_x);
+	game_field->Move(game_y, game_x);
 	printMove(cursor_y, cursor_x, player_symbol);
 	changePlayer();
 
@@ -105,31 +124,23 @@ void handleButtons()
 		switch(ch)
 		{
 		case KEY_LEFT:
-			if(cursor_x != min_x) {
-				cursor_x -= 1;
-			}
+			if(cursor_x > min_x) cursor_x -= NC_MOVE_X;
 			else dbgprint("left border");
 			break;
 		case KEY_DOWN:
-			if(cursor_y != max_y) {
-				cursor_y += 1;
-			}
+			if(cursor_y < max_y) cursor_y += NC_MOVE_Y;
 			else dbgprint("down border");
 			break;
 		case KEY_UP:
-			if(cursor_y != min_y) {
-				cursor_y -= 1;
-			}
+			if(cursor_y > min_y) cursor_y -= NC_MOVE_Y;
 			else dbgprint("up border");
 			break;
 		case KEY_RIGHT:
-			if(cursor_x != max_x) {
-				cursor_x += 1;
-			}
+			if(cursor_x < max_x) cursor_x += NC_MOVE_X; 
 			else dbgprint("right border");
 			break;
 		case key_enter: {
-			handleMove();
+			gameMove();
 			break;
 		}
 		case key_restart: {
