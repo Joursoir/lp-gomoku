@@ -31,7 +31,7 @@ private:
 	void UpdateState(int y, int x);
 	int ScanRowsAround(int y, int x);
 	int ScanColsAround(int y, int x);
-	int ScanDiags();
+	int ScanDiagsAround(int y, int x);
 };
 
 #endif /* LPG_GAMEFIELD_H */

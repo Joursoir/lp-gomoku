@@ -53,7 +53,7 @@ void GameField::UpdateState(int y, int x)
 		return;
 	if((state = ScanColsAround(y, x)) != G_NONE)
 		return;
-	if((state = ScanDiags()) != G_NONE)
+	if((state = ScanDiagsAround(y, x)) != G_NONE)
 		return;
 }
 
@@ -61,7 +61,7 @@ int GameField::ScanRowsAround(int y, int x)
 {
 	int i, n;
 	int player = field[y][x];
-	// ray left
+	// ray to left
 	for(i = x, n = 0; i >= 0; i--) {
 		if(player == field[y][i]) {
 			n++;
@@ -71,8 +71,8 @@ int GameField::ScanRowsAround(int y, int x)
 		else break;
 	}
 
-	// ray right
-	for(i = x; i < rows; i++) {
+	// ray to right
+	for(i = x, n -= 1; i < rows; i++) {
 		if(player == field[y][i]) {
 			n++;
 			if(n == win_length)
@@ -88,7 +88,7 @@ int GameField::ScanColsAround(int y, int x)
 {
 	int i, n;
 	int player = field[y][x];
-	// ray up
+	// ray to up
 	for(i = y, n = 0; i >= 0; i--) {
 		if(player == field[i][x]) {
 			n++;
@@ -98,8 +98,8 @@ int GameField::ScanColsAround(int y, int x)
 		else break;
 	}
 
-	// ray down
-	for(i = y; i < cols; i++) {
+	// ray to down
+	for(i = y, n -= 1; i < cols; i++) {
 		if(player == field[i][x]) {
 			n++;
 			if(n == win_length)
@@ -111,15 +111,51 @@ int GameField::ScanColsAround(int y, int x)
 	return G_NONE;
 }
 
-/* This version is a dummy */
-int GameField::ScanDiags()
+int GameField::ScanDiagsAround(int y, int x)
 {
-	if(field[0][0] == field[1][1] && field[1][1] == field[2][2] &&
-			field[1][1] != G_EMPTY)
-		return field[1][1];
-	else if(field[0][2] == field[1][1] && field[1][1] == field[2][0] &&
-			field[1][1] != G_EMPTY)
-		return field[1][1];
+	int i, j, n;
+	int player = field[y][x];
+	// ray to left up corner
+	for(i = x, j = y, n = 0; i >= 0 && j >= 0; i--, j--) {
+		if(player == field[j][i]) {
+			n++;
+			if(n == win_length)
+				return player;
+		}
+		else break;
+	}
 
-	return 0;
+	// ray to right down corner
+	for(i = x, j = y, n -= 1; i < rows && j < cols; i++, j++) {
+		if(player == field[j][i]) {
+			n++;
+			if(n == win_length)
+				return player;
+		}
+		else break;
+	}
+	
+	/* change the diagonal */
+
+	// ray to right up corner
+	for(i = x, j = y, n = 0; i < rows && j >= 0; i++, j--) {
+		if(player == field[j][i]) {
+			n++;
+			if(n == win_length)
+				return player;
+		}
+		else break;
+	}
+
+	// ray to left down cornet
+	for(i = x, j = y, n -= 1; i >= 0 && j < cols; i--, j++) {
+		if(player == field[j][i]) {
+			n++;
+			if(n == win_length)
+				return player;
+		}
+		else break;
+	}
+
+	return G_NONE;
 }
