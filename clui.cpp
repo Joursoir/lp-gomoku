@@ -1,4 +1,5 @@
 #include <ncurses.h>
+#include <string.h>
 
 #include "GameField.hpp"
 
@@ -7,6 +8,9 @@
 #define SYMBOL_PLAYERONE 'x'
 #define SYMBOL_PLAYERTWO 'o'
 
+const char app_name[] = "Let's play gomoku!";
+const char app_tips[] = "R - restart game; ESC - exit";
+
 enum keys {
 	key_restart = 'r',
 	key_escape = 27,
@@ -14,6 +18,7 @@ enum keys {
 };
 
 /* clui vars */
+int screen_cols = 0, screen_rows = 0;
 int min_y, max_y, min_x, max_x;
 
 /* game vars */
@@ -37,22 +42,40 @@ void updateCursor()
 
 void dbgprint(const char *msg)
 {
-	mvprintw(10, 0, "                                 "); // clear old
-	mvprintw(10, 0, msg);
+	move(20, 0);
+	clrtoeol(); // clear old
+	mvprintw(20, 0, msg);
 	updateCursor();  // return cursor back
-	refresh();
+}
+
+void help_print(const char *msg)
+{
+	move(max_y + 2, 0);
+	clrtoeol();
+	mvprintw(max_y + 2, (screen_rows - strlen(msg)) / 2, msg);
+	updateCursor();
 }
 
 void drawGame(int cols, int rows, int symbol)
 {
-	int i, j;
-	for(j = 0; j < cols * 2 - 1; j++) {
-		move(j, 0);
-		if(j % 2 == 0) {
-			addch('~');
+	getmaxyx(stdscr, screen_cols, screen_rows);
+
+	int len_col = cols * NC_MOVE_Y - 1;
+	min_y = (screen_cols - len_col) / 2;
+	max_y = min_y + len_col - 1;
+
+	int len_row = rows * NC_MOVE_X - 1;
+	min_x = (screen_rows - len_row) / 2;
+	max_x = min_x + len_row - 1;
+
+	int i, j, d;
+	for(j = min_y, d = 0; j <= max_y; j++, d++) {
+		move(j, min_x);
+		if(d % 2 == 0) {
+			addch('#');
 			for(i = 1; i < rows; i++) {
 				addch('|');
-				addch('~');
+				addch('#');
 			}
 		}
 		else {
@@ -64,23 +87,26 @@ void drawGame(int cols, int rows, int symbol)
 		}
 	}
 
-	min_y = 0;
-	max_y = cols * 2 - 2;
-	min_x = 0;
-	max_x = rows * 2 - 2; 
+	mvprintw(min_y - 3, (screen_rows - strlen(app_name)) / 2, app_name);
+	mvprintw(min_y - 2, (screen_rows - strlen(app_tips)) / 2, app_tips);
+	help_print("MOVE: x");
 
-	cursor_y = max_y / 2;
-	cursor_x = max_x / 2;
+	cursor_y = min_y; // + (max_y - min_y) / NC_MOVE_Y;
+	cursor_x = min_x; // + (max_x - min_x) / NC_MOVE_X;
 	player_symbol = symbol;
 	updateCursor();
 }
 
 void changePlayer()
 {
-	if(player_symbol == SYMBOL_PLAYERONE)
+	if(player_symbol == SYMBOL_PLAYERONE) {
 		player_symbol = SYMBOL_PLAYERTWO;
-	else
+		help_print("MOVE: o");
+	}
+	else {
 		player_symbol = SYMBOL_PLAYERONE;
+		help_print("MOVE: x");
+	}
 }
 
 void printMove(int y, int x, int symbol)
@@ -92,8 +118,12 @@ void printMove(int y, int x, int symbol)
 
 void gameMove()
 {
-	int game_y = cursor_y > 0 ? cursor_y - cursor_y / 2 : 0;
-	int game_x = cursor_x > 0 ? cursor_x - cursor_x / 2 : 0;
+	int state = game_field->GetState();
+	if(state != G_NONE)
+		return;
+
+	int game_y = (cursor_y - min_y) / NC_MOVE_Y;
+	int game_x = (cursor_x - min_x) / NC_MOVE_X;
 
 	if(!game_field->CanMove(game_y, game_x)) {
 		dbgprint("yet 'x' or 'o'");
@@ -103,17 +133,19 @@ void gameMove()
 	printMove(cursor_y, cursor_x, player_symbol);
 	changePlayer();
 
-	int state = game_field->GetState();
+	state = game_field->GetState();
 	if(state == G_NONE) {
 		/* if play with AI:
 		ai move */
+
+		return;
 	}
-	else if(state == G_DRAW)
-		dbgprint("DRAW!");
+	if(state == G_DRAW)
+		help_print("DRAW!");
 	else if(state == G_XPLAYER)
-		dbgprint("PLAYER 'X' WIN!");
+		help_print("WINNER: x!");
 	else if(state == G_OPLAYER)
-		dbgprint("PLAYER 'O' WIN!");
+		help_print("WINNER: o!");
 }
 
 void handleButtons()
