@@ -1,5 +1,6 @@
 #include <ncurses.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "GameField.hpp"
 
@@ -48,12 +49,20 @@ void dbgprint(const char *msg)
 	updateCursor();  // return cursor back
 }
 
-void help_print(const char *msg)
+void help_print(const char *msg, ...)
 {
 	move(max_y + 2, 0);
 	clrtoeol();
-	mvprintw(max_y + 2, (screen_rows - strlen(msg)) / 2, msg);
+
+	va_list args;
+	va_start(args, msg);
+	char *str = new char[screen_rows+1];
+	vsprintf(str, msg, args);
+	va_end(args);
+
+	mvprintw(max_y + 2, (screen_rows - strlen(str)) / 2, str);
 	updateCursor();
+	delete[] str;
 }
 
 void drawGame(int cols, int rows, int symbol)
@@ -89,7 +98,7 @@ void drawGame(int cols, int rows, int symbol)
 
 	mvprintw(min_y - 3, (screen_rows - strlen(app_name)) / 2, app_name);
 	mvprintw(min_y - 2, (screen_rows - strlen(app_tips)) / 2, app_tips);
-	help_print("MOVE: x");
+	help_print("MOVE: %c", SYMBOL_PLAYERONE);
 
 	cursor_y = min_y; // + (max_y - min_y) / NC_MOVE_Y;
 	cursor_x = min_x; // + (max_x - min_x) / NC_MOVE_X;
@@ -99,14 +108,11 @@ void drawGame(int cols, int rows, int symbol)
 
 void changePlayer()
 {
-	if(player_symbol == SYMBOL_PLAYERONE) {
+	if(player_symbol == SYMBOL_PLAYERONE)
 		player_symbol = SYMBOL_PLAYERTWO;
-		help_print("MOVE: o");
-	}
-	else {
+	else
 		player_symbol = SYMBOL_PLAYERONE;
-		help_print("MOVE: x");
-	}
+	help_print("MOVE: %c", player_symbol);
 }
 
 void printMove(int y, int x, int symbol)
@@ -137,24 +143,21 @@ void gameMove()
 	if(state == G_NONE) {
 		/* if play with AI:
 		ai move */
-
-		return;
 	}
-	if(state == G_DRAW)
+	else if(state == G_DRAW)
 		help_print("DRAW!");
 	else if(state == G_XPLAYER)
-		help_print("WINNER: x!");
+		help_print("WINNER: %c!", SYMBOL_PLAYERONE);
 	else if(state == G_OPLAYER)
-		help_print("WINNER: o!");
+		help_print("WINNER: %c!", SYMBOL_PLAYERTWO);
 }
 
 void handleButtons()
 {
 	int ch;
-	while((ch = getch()) != key_escape)
+	while((ch = getch()) != key_escape && ch != KEY_RESIZE)
 	{
-		switch(ch)
-		{
+		switch(ch) {
 		case KEY_LEFT:
 			if(cursor_x > min_x) cursor_x -= NC_MOVE_X;
 			else dbgprint("left border");
