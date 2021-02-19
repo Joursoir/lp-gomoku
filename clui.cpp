@@ -19,7 +19,7 @@ enum keys {
 };
 
 /* clui vars */
-int screen_cols = 0, screen_rows = 0;
+int screen_rows = 0, screen_cols = 0;
 int min_y, max_y, min_x, max_x;
 
 /* game vars */
@@ -56,53 +56,53 @@ void help_print(const char *msg, ...)
 
 	va_list args;
 	va_start(args, msg);
-	char *str = new char[screen_rows+1];
+	char *str = new char[screen_cols+1];
 	vsprintf(str, msg, args);
 	va_end(args);
 
-	mvprintw(max_y + 2, (screen_rows - strlen(str)) / 2, str);
+	mvprintw(max_y + 2, (screen_cols - strlen(str)) / 2, str);
 	updateCursor();
 	delete[] str;
 }
 
-void drawGame(int cols, int rows, int symbol)
+void drawGame(int rows, int cols)
 {
-	getmaxyx(stdscr, screen_cols, screen_rows);
+	getmaxyx(stdscr, screen_rows, screen_cols);
 
-	int len_col = cols * NC_MOVE_Y - 1;
-	min_y = (screen_cols - len_col) / 2;
-	max_y = min_y + len_col - 1;
+	int used_row = rows * NC_MOVE_Y - 1;
+	min_y = (screen_rows - used_row) / 2;
+	max_y = min_y + used_row - 1;
 
-	int len_row = rows * NC_MOVE_X - 1;
-	min_x = (screen_rows - len_row) / 2;
-	max_x = min_x + len_row - 1;
+	int used_col = cols * NC_MOVE_X - 1;
+	min_x = (screen_cols - used_col) / 2;
+	max_x = min_x + used_col - 1;
 
 	int i, j, d;
 	for(j = min_y, d = 0; j <= max_y; j++, d++) {
 		move(j, min_x);
 		if(d % 2 == 0) {
 			addch('#');
-			for(i = 1; i < rows; i++) {
+			for(i = 1; i < cols; i++) {
 				addch('|');
 				addch('#');
 			}
 		}
 		else {
 			addch('-');
-			for(i = 1; i < rows; i++) {
+			for(i = 1; i < cols; i++) {
 				addch('|');
 				addch('-');
 			}
 		}
 	}
 
-	mvprintw(min_y - 3, (screen_rows - strlen(app_name)) / 2, app_name);
-	mvprintw(min_y - 2, (screen_rows - strlen(app_tips)) / 2, app_tips);
+	mvprintw(min_y - 3, (screen_cols - strlen(app_name)) / 2, app_name);
+	mvprintw(min_y - 2, (screen_cols - strlen(app_tips)) / 2, app_tips);
 	help_print("MOVE: %c", SYMBOL_PLAYERONE);
 
 	cursor_y = min_y; // + (max_y - min_y) / NC_MOVE_Y;
 	cursor_x = min_x; // + (max_x - min_x) / NC_MOVE_X;
-	player_symbol = symbol;
+	print_symbol = SYMBOL_PLAYERONE;
 	updateCursor();
 }
 
@@ -180,7 +180,7 @@ void handleButtons()
 		}
 		case key_restart: {
 			delete game_field;
-			drawGame(gb_y, gb_x, gb_symbol);
+			drawGame(gb_y, gb_x);
 			game_field = new GameField(gb_y, gb_x, gb_lwin);
 			// no break
 		}
@@ -203,6 +203,7 @@ int main(int argc, char *argv[])
 
 	game_field = new GameField(gb_y, gb_x, gb_lwin);
 	drawGame(gb_y, gb_x, gb_symbol);
+	drawGame(gb_y, gb_x);
 	handleButtons();
 
 	if(game_field)

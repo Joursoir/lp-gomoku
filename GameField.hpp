@@ -12,7 +12,7 @@ enum states {
 class GameField {
 	// optional:
 	int **field;
-	int cols, rows;
+	int rows, cols;
 	int free_fields;
 	int win_length;
 
@@ -24,8 +24,9 @@ public:
 	GameField(const GameField &a);
 	~GameField();
 	int GetState() { return state; }
-	int GetCols() { return cols; }
 	int GetRows() { return rows; }
+	int GetCols() { return cols; }
+	int GetWhoMove() { return who_move; }
 
 	bool CanMove(int y, int x);
 	void Move(int y, int x);
