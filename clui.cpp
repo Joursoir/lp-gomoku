@@ -1,9 +1,13 @@
 #include <ncurses.h>
+#include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
 #include <stdarg.h>
 
 #include "GameField.hpp"
+#include "ai.hpp"
 
+#define MIN_RCWD 3 // RCWD = rows/cols/win/depth
 #define NC_MOVE_X 2
 #define NC_MOVE_Y 2
 #define SYMBOL_PLAYERONE 'x'
@@ -24,16 +28,21 @@ int min_y, max_y, min_x, max_x;
 
 /* game vars */
 GameField *game_field;
+AI *game_bot;
+bool play_with_ai = false;
 
 /* players vars */
 int cursor_y, cursor_x;
-char player_symbol;
+char print_symbol;
 
 /* command line options */
-int gb_y = 3;
-int gb_x = 3; 
-int gb_lwin = 3;
+int gb_y = MIN_RCWD;
+int gb_x = MIN_RCWD; 
+int gb_lwin = MIN_RCWD;
 int gb_symbol = SYMBOL_PLAYERONE;
+int gb_depth = MIN_RCWD;
+
+void aiMove(int y, int x);
 
 void updateCursor()
 {
@@ -108,11 +117,11 @@ void drawGame(int rows, int cols)
 
 void changePlayer()
 {
-	if(player_symbol == SYMBOL_PLAYERONE)
-		player_symbol = SYMBOL_PLAYERTWO;
+	if(print_symbol == SYMBOL_PLAYERONE)
+		print_symbol = SYMBOL_PLAYERTWO;
 	else
-		player_symbol = SYMBOL_PLAYERONE;
-	help_print("MOVE: %c", player_symbol);
+		print_symbol = SYMBOL_PLAYERONE;
+	help_print("MOVE: %c", print_symbol);
 }
 
 void printMove(int y, int x, int symbol)
@@ -122,27 +131,30 @@ void printMove(int y, int x, int symbol)
 	updateCursor();
 }
 
-void gameMove()
+void gameMove(int y, int x)
 {
 	int state = game_field->GetState();
 	if(state != G_NONE)
 		return;
 
-	int game_y = (cursor_y - min_y) / NC_MOVE_Y;
-	int game_x = (cursor_x - min_x) / NC_MOVE_X;
+	int game_y = (y - min_y) / NC_MOVE_Y;
+	int game_x = (x - min_x) / NC_MOVE_X;
 
 	if(!game_field->CanMove(game_y, game_x)) {
 		dbgprint("yet 'x' or 'o'");
 		return;
 	}
 	game_field->Move(game_y, game_x);
-	printMove(cursor_y, cursor_x, player_symbol);
+	printMove(y, x, print_symbol);
 	changePlayer();
 
 	state = game_field->GetState();
 	if(state == G_NONE) {
-		/* if play with AI:
-		ai move */
+		if(play_with_ai && gb_symbol != print_symbol) {
+			int ai_y, ai_x;
+			game_bot->GetBestMove(ai_y, ai_x, *game_field);
+			aiMove(ai_y, ai_x);
+		}
 	}
 	else if(state == G_DRAW)
 		help_print("DRAW!");
@@ -150,6 +162,11 @@ void gameMove()
 		help_print("WINNER: %c!", SYMBOL_PLAYERONE);
 	else if(state == G_OPLAYER)
 		help_print("WINNER: %c!", SYMBOL_PLAYERTWO);
+}
+
+void aiMove(int y, int x)
+{
+	gameMove(min_y + NC_MOVE_Y * y, min_x + NC_MOVE_X * x);
 }
 
 void handleButtons()
@@ -175,7 +192,7 @@ void handleButtons()
 			else dbgprint("right border");
 			break;
 		case key_enter: {
-			gameMove();
+			gameMove(cursor_y, cursor_x);
 			break;
 		}
 		case key_restart: {
@@ -191,6 +208,31 @@ void handleButtons()
 	}
 }
 
+void usage()
+{
+	endwin();
+	printf("Let's play gomoku!\n"
+		"Synopsis:\n"
+		"\tlpgomoku [OPTION]\n"
+		"Option:\n"
+		"\t-h, --help\n"
+		"\t\tPrint this text.\n"
+		"\t-r, --rows\n"
+		"\t\tNumber of rows. %d is used by default\n"
+		"\t-c, --cols\n"
+		"\t\tNumber of columns. %d is used by default\n"
+		"\t-w, --win\n"
+		"\t\tLength of winning combination. %d is used by default\n"
+		"\t-a, --ai\n"
+		"\t\tArtificial intelligence that play with you. Disabled by default\n"
+		"\t-s, --symbol\n"
+		"\t\tChoose a mark for move. Available only if option --ai enabled.\n"
+		"\t-d, --depth\n"
+		"\t\tDepth of the game tree for AI. Available only if option "
+		"--ai enabled. %d is used by default\n",
+		MIN_RCWD, MIN_RCWD, MIN_RCWD, MIN_RCWD);
+}
+
 int main(int argc, char *argv[])
 {
 	/* ncurses settings */
@@ -199,15 +241,61 @@ int main(int argc, char *argv[])
 	noecho();
 
 	/* command line options */
-	/* ... */
+	const struct option long_options[] = {
+		{"help", no_argument, NULL, 'h'},
+		{"rows", required_argument, NULL, 'r'},
+		{"cols", required_argument, NULL, 'c'},
+		{"win", required_argument, NULL, 'w'},
+		{"ai", no_argument, NULL, 'a'},
+		{"symbol", required_argument, NULL, 's'},
+		{"depth", required_argument, NULL, 'd'},
+		{NULL, 0, NULL, 0}
+	};
 
+	int result;
+	while((result = getopt_long(argc, argv, "hr:c:w:as:", long_options, NULL)) != -1) {
+		switch(result) {
+		case 'h': { usage(); return 0; }
+		case 'r': { gb_y = atoi(optarg); break; }
+		case 'c': { gb_x = atoi(optarg); break; }
+		case 'w': { gb_lwin = atoi(optarg); break; }
+		case 'a': { play_with_ai = true; break; }
+		case 's': { gb_symbol = optarg[0]; break; }
+		case 'd': { gb_depth = atoi(optarg); break; }
+		default: break;
+		}
+	}
+
+	if(gb_y < MIN_RCWD || gb_x < MIN_RCWD || gb_lwin < MIN_RCWD || gb_depth < MIN_RCWD) {
+		endwin();
+		printf("Valid columns/rows/win/depth length are %d and more\n", MIN_RCWD);
+		return 1;
+	}
+	if(play_with_ai) {
+		if(gb_symbol != SYMBOL_PLAYERONE && gb_symbol != SYMBOL_PLAYERTWO) {
+			endwin();
+			printf("Valid symbol: %c (move first), %c\n",
+				SYMBOL_PLAYERONE, SYMBOL_PLAYERTWO);
+			return 1;
+		}
+		game_bot = new AI(gb_depth);
+	}
+	else gb_symbol = SYMBOL_PLAYERONE;
+
+	/* start game */
 	game_field = new GameField(gb_y, gb_x, gb_lwin);
-	drawGame(gb_y, gb_x, gb_symbol);
 	drawGame(gb_y, gb_x);
+	if(play_with_ai && gb_symbol == SYMBOL_PLAYERTWO) {
+		int ai_y, ai_x;
+		game_bot->GetFirstMove(ai_y, ai_x, gb_y, gb_x);
+		aiMove(ai_y, ai_x);
+	}
 	handleButtons();
 
 	if(game_field)
 		delete game_field;
+	if(game_bot)
+		delete game_bot;
 	endwin();
 	return 0;
 }
