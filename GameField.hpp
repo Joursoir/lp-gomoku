@@ -21,11 +21,15 @@ class GameField {
 	int who_move;
 public:
 	GameField(int a_cols, int a_rows, int a_lwin);
+	GameField(const GameField &a);
 	~GameField();
 	int GetState() { return state; }
+	int GetCols() { return cols; }
+	int GetRows() { return rows; }
 
 	bool CanMove(int y, int x);
 	void Move(int y, int x);
+	void UndoMove(int y, int x);
 
 private:
 	void UpdateState(int y, int x);

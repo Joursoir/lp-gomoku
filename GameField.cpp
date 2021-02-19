@@ -15,6 +15,25 @@ GameField::GameField(int a_cols, int a_rows, int a_lwin)
 	free_fields = cols * rows;
 }
 
+GameField::GameField(const GameField& a)
+{
+	int c, r;
+	cols = a.cols;
+	rows = a.rows;
+	free_fields = a.free_fields;
+	win_length = a.win_length;
+	state = a.state;
+	who_move = a.who_move;
+
+	field = new int*[cols];
+	for(c = 0; c < cols; c++) {
+		field[c] = new int[rows];
+		for(r = 0; r < rows; r++) {
+			field[c][r] = a.field[c][r];
+		}
+	}
+}
+
 GameField::~GameField()
 {
 	if(field) {
@@ -42,19 +61,28 @@ void GameField::Move(int y, int x)
 	UpdateState(y, x);
 }
 
+void GameField::UndoMove(int y, int x)
+{
+	who_move = field[y][x];
+	field[y][x] = G_EMPTY;
+	free_fields++;
+
+	UpdateState(y, x);
+}
+
 void GameField::UpdateState(int y, int x) 
 {
-	if(!free_fields) {
-		state = G_DRAW;
-		return;
-	}
-
 	if((state = ScanRowsAround(y, x)) != G_NONE)
 		return;
 	if((state = ScanColsAround(y, x)) != G_NONE)
 		return;
 	if((state = ScanDiagsAround(y, x)) != G_NONE)
 		return;
+
+	if(!free_fields) {
+		state = G_DRAW;
+		return;
+	}
 }
 
 int GameField::ScanRowsAround(int y, int x)
