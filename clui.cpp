@@ -42,20 +42,12 @@ int gb_lwin = MIN_RCWD;
 int gb_symbol = SYMBOL_PLAYERONE;
 int gb_depth = MIN_RCWD;
 
-void aiMove(int y, int x);
+void aiMove();
 
 void updateCursor()
 {
 	move(cursor_y, cursor_x);
 	refresh();
-}
-
-void dbgprint(const char *msg)
-{
-	move(20, 0);
-	clrtoeol(); // clear old
-	mvprintw(20, 0, msg);
-	updateCursor();  // return cursor back
 }
 
 void help_print(const char *msg, ...)
@@ -115,6 +107,16 @@ void drawGame(int rows, int cols)
 	updateCursor();
 }
 
+void startGame()
+{
+	if(game_field)
+		delete game_field;
+	game_field = new GameField(gb_y, gb_x, gb_lwin);
+	drawGame(gb_y, gb_x);
+	if(play_with_ai && gb_symbol == SYMBOL_PLAYERTWO)
+		aiMove();
+}
+
 void changePlayer()
 {
 	if(print_symbol == SYMBOL_PLAYERONE)
@@ -140,21 +142,17 @@ void gameMove(int y, int x)
 	int game_y = (y - min_y) / NC_MOVE_Y;
 	int game_x = (x - min_x) / NC_MOVE_X;
 
-	if(!game_field->CanMove(game_y, game_x)) {
-		dbgprint("yet 'x' or 'o'");
+	if(!game_field->CanMove(game_y, game_x)) 
 		return;
-	}
+	
 	game_field->Move(game_y, game_x);
 	printMove(y, x, print_symbol);
 	changePlayer();
 
 	state = game_field->GetState();
 	if(state == G_NONE) {
-		if(play_with_ai && gb_symbol != print_symbol) {
-			int ai_y, ai_x;
-			game_bot->GetBestMove(ai_y, ai_x, *game_field);
-			aiMove(ai_y, ai_x);
-		}
+		if(play_with_ai && gb_symbol != print_symbol)
+			aiMove();
 	}
 	else if(state == G_DRAW)
 		help_print("DRAW!");
@@ -164,8 +162,10 @@ void gameMove(int y, int x)
 		help_print("WINNER: %c!", SYMBOL_PLAYERTWO);
 }
 
-void aiMove(int y, int x)
+void aiMove()
 {
+	int y, x;
+	game_bot->GetBestMove(y, x, *game_field);
 	gameMove(min_y + NC_MOVE_Y * y, min_x + NC_MOVE_X * x);
 }
 
@@ -176,31 +176,27 @@ void handleButtons()
 	{
 		switch(ch) {
 		case KEY_LEFT:
-			if(cursor_x > min_x) cursor_x -= NC_MOVE_X;
-			else dbgprint("left border");
+			if(cursor_x > min_x)
+				cursor_x -= NC_MOVE_X;
 			break;
 		case KEY_DOWN:
-			if(cursor_y < max_y) cursor_y += NC_MOVE_Y;
-			else dbgprint("down border");
+			if(cursor_y < max_y)
+				cursor_y += NC_MOVE_Y;
 			break;
 		case KEY_UP:
-			if(cursor_y > min_y) cursor_y -= NC_MOVE_Y;
-			else dbgprint("up border");
+			if(cursor_y > min_y)
+				cursor_y -= NC_MOVE_Y;
 			break;
 		case KEY_RIGHT:
-			if(cursor_x < max_x) cursor_x += NC_MOVE_X; 
-			else dbgprint("right border");
+			if(cursor_x < max_x)
+				cursor_x += NC_MOVE_X; 
 			break;
-		case key_enter: {
+		case key_enter:
 			gameMove(cursor_y, cursor_x);
 			break;
-		}
-		case key_restart: {
-			delete game_field;
-			drawGame(gb_y, gb_x);
-			game_field = new GameField(gb_y, gb_x, gb_lwin);
+		case key_restart:
+			startGame();
 			// no break
-		}
 		default:
 			continue;
 		}
@@ -253,7 +249,7 @@ int main(int argc, char *argv[])
 	};
 
 	int result;
-	while((result = getopt_long(argc, argv, "hr:c:w:as:", long_options, NULL)) != -1) {
+	while((result = getopt_long(argc, argv, "hr:c:w:as:d:", long_options, NULL)) != -1) {
 		switch(result) {
 		case 'h': { usage(); return 0; }
 		case 'r': { gb_y = atoi(optarg); break; }
@@ -278,18 +274,12 @@ int main(int argc, char *argv[])
 				SYMBOL_PLAYERONE, SYMBOL_PLAYERTWO);
 			return 1;
 		}
-		game_bot = new AI(gb_depth);
+		game_bot = new AI(gb_symbol == SYMBOL_PLAYERONE ?
+			G_OPLAYER : G_XPLAYER, gb_depth);
 	}
 	else gb_symbol = SYMBOL_PLAYERONE;
 
-	/* start game */
-	game_field = new GameField(gb_y, gb_x, gb_lwin);
-	drawGame(gb_y, gb_x);
-	if(play_with_ai && gb_symbol == SYMBOL_PLAYERTWO) {
-		int ai_y, ai_x;
-		game_bot->GetFirstMove(ai_y, ai_x, gb_y, gb_x);
-		aiMove(ai_y, ai_x);
-	}
+	startGame();
 	handleButtons();
 
 	if(game_field)

@@ -4,11 +4,12 @@
 class GameField;
 
 class AI {
+	int player;
 	int max_depth;
+	bool first_move;
 public:
-	AI(int d);
+	AI(int p, int d);
 
-	void GetFirstMove(int &my, int &mx, int rows, int cols);
 	void GetBestMove(int &my, int &mx, GameField field);
 private:
 	int score(GameField field);

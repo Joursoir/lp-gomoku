@@ -13,15 +13,9 @@ enum scores {
 	LOSE_SCORE = -10
 };
 
-AI::AI(int d) : max_depth(d)
+AI::AI(int p, int d) : player(p), max_depth(d), first_move(true)
 {
 	srand(time(NULL));
-}
-
-void AI::GetFirstMove(int &my, int &mx, int rows, int cols)
-{
-	my = rand() % rows;
-	mx = rand() % cols;
 }
 
 void AI::GetBestMove(int &my, int &mx, GameField field)
@@ -30,6 +24,14 @@ void AI::GetBestMove(int &my, int &mx, GameField field)
 	int rows = field.GetRows();
 	int cols = field.GetCols();
 
+	// give chance to user :)
+	if(first_move) {
+		my = rand() % rows;
+		mx = rand() % cols;
+		first_move = false;
+		return;
+	}
+
 	int y, x;
 	for(y = 0; y < rows; y++) {
 		for(x = 0; x < cols; x++)
@@ -37,7 +39,7 @@ void AI::GetBestMove(int &my, int &mx, GameField field)
 			if(!field.CanMove(y, x))
 				continue;
 			field.Move(y, x);
-			int result = min(field, 1); // min because next move by player
+			int result = min(field, 1);
 			field.UndoMove(y, x);
 			if(result > score) {
 				score = result;
@@ -54,9 +56,9 @@ int AI::score(GameField field)
 	if(state == G_DRAW)
 		return DRAW_SCORE;
 	if(state == G_XPLAYER)
-		return field.GetWhoMove() == G_XPLAYER ? WIN_SCORE : LOSE_SCORE;
+		return player == G_XPLAYER ? WIN_SCORE : LOSE_SCORE;
 	if(state == G_OPLAYER)
-		return field.GetWhoMove() == G_OPLAYER ? WIN_SCORE : LOSE_SCORE;
+		return player == G_OPLAYER ? WIN_SCORE : LOSE_SCORE;
 	return NONE_SCORE;
 }
 
@@ -104,7 +106,7 @@ int AI::max(GameField field, int depth)
 			if(!field.CanMove(y, x))
 				continue;
 			field.Move(y, x);
-			int result = max(field, depth + 1);
+			int result = min(field, depth + 1);
 			field.UndoMove(y, x);
 			if(result > score)
 				score = result;

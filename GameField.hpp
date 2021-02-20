@@ -26,7 +26,6 @@ public:
 	int GetState() { return state; }
 	int GetRows() { return rows; }
 	int GetCols() { return cols; }
-	int GetWhoMove() { return who_move; }
 
 	bool CanMove(int y, int x);
 	void Move(int y, int x);
