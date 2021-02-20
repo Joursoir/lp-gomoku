@@ -11,9 +11,10 @@ public:
 	AI(int p, int d);
 
 	void GetBestMove(int &my, int &mx, GameField field);
+	void FirstMove(bool m) { first_move = m; }
 private:
 	int score(GameField field);
-	int MinMax(GameField field, int depth);
+	int MinMax(GameField field, int alpha, int beta, int depth);
 };
 
 #endif /* LPG_AI_H */

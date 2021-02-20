@@ -113,8 +113,10 @@ void startGame()
 		delete game_field;
 	game_field = new GameField(gb_y, gb_x, gb_lwin);
 	drawGame(gb_y, gb_x);
-	if(play_with_ai && gb_symbol == SYMBOL_PLAYERTWO)
+	if(play_with_ai && gb_symbol == SYMBOL_PLAYERTWO) {
+		game_bot->FirstMove(true);
 		aiMove();
+	}
 }
 
 void changePlayer()

@@ -26,8 +26,10 @@ void AI::GetBestMove(int &my, int &mx, GameField field)
 
 	// give chance to user :)
 	if(first_move) {
-		my = rand() % rows;
-		mx = rand() % cols;
+		do {
+			my = rand() % rows;
+			mx = rand() % cols;
+		} while( !field.CanMove(my, mx) );
 		first_move = false;
 		return;
 	}
@@ -39,7 +41,7 @@ void AI::GetBestMove(int &my, int &mx, GameField field)
 			if(!field.CanMove(y, x))
 				continue;
 			field.Move(y, x);
-			int result = MinMax(field, 1);
+			int result = MinMax(field, score, MAX_SCORE, 1);
 			field.UndoMove(y, x);
 			if(result > score) {
 				score = result;
@@ -62,13 +64,14 @@ int AI::score(GameField field)
 	return NONE_SCORE;
 }
 
-int AI::MinMax(GameField field, int depth)
+//								MIN_SCORE, MAX_SCORE
+int AI::MinMax(GameField field, int alpha, int beta, int depth)
 {
 	if(field.GetState() != G_NONE || depth >= max_depth) {
 		return score(field);
 	}
 
-	int score = MAX_SCORE;
+	int score = beta;
 	int rows = field.GetRows();
 	int cols = field.GetCols();
 
@@ -79,10 +82,13 @@ int AI::MinMax(GameField field, int depth)
 			if(!field.CanMove(y, x))
 				continue;
 			field.Move(y, x);
-			int result = MinMax(field, depth + 1);
+			int result = MinMax(field, alpha, score, depth + 1);
 			field.UndoMove(y, x);
 			if(result < score)
 				score = result;
+			fprintf(stderr, "alpha (%d) >= beta (%d)?\n", alpha, score);
+			if(alpha >= score)
+				return score;
 		}
 	}
 	return score;
