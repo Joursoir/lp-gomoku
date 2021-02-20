@@ -39,7 +39,7 @@ void AI::GetBestMove(int &my, int &mx, GameField field)
 			if(!field.CanMove(y, x))
 				continue;
 			field.Move(y, x);
-			int result = min(field, 1);
+			int result = MinMax(field, 1);
 			field.UndoMove(y, x);
 			if(result > score) {
 				score = result;
@@ -62,7 +62,7 @@ int AI::score(GameField field)
 	return NONE_SCORE;
 }
 
-int AI::min(GameField field, int depth)
+int AI::MinMax(GameField field, int depth)
 {
 	if(field.GetState() != G_NONE || depth >= max_depth) {
 		return score(field);
@@ -79,39 +79,11 @@ int AI::min(GameField field, int depth)
 			if(!field.CanMove(y, x))
 				continue;
 			field.Move(y, x);
-			int result = max(field, depth + 1);
+			int result = MinMax(field, depth + 1);
 			field.UndoMove(y, x);
 			if(result < score)
 				score = result;
 		}
 	}
-
-	return score;
-}
-
-int AI::max(GameField field, int depth)
-{
-	if(field.GetState() != G_NONE || depth >= max_depth) {
-		return score(field);
-	}
-
-	int score = MIN_SCORE;
-	int rows = field.GetRows();
-	int cols = field.GetCols();
-
-	int y, x;
-	for(y = 0; y < rows; y++) {
-		for(x = 0; x < cols; x++)
-		{
-			if(!field.CanMove(y, x))
-				continue;
-			field.Move(y, x);
-			int result = min(field, depth + 1);
-			field.UndoMove(y, x);
-			if(result > score)
-				score = result;
-		}
-	}
-
 	return score;
 }
