@@ -1,3 +1,21 @@
+/***
+	This file is part of Let's play gomoku!
+	Copyright (C) 2021 Aleksandr D. Goncharov (Joursoir) <chat@joursoir.net>
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+***/
+
 #include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
@@ -215,6 +233,8 @@ void usage()
 		"Option:\n"
 		"\t-h, --help\n"
 		"\t\tPrint this text.\n"
+		"\t-v, --version\n"
+		"\t\tPrint version information.\n"
 		"\t-r, --rows\n"
 		"\t\tNumber of rows. %d is used by default\n"
 		"\t-c, --cols\n"
@@ -231,6 +251,16 @@ void usage()
 		MIN_RCWD, MIN_RCWD, MIN_RCWD, MIN_RCWD);
 }
 
+void version()
+{
+	endwin();
+	printf("Let's play gomoku!\n"
+		"Copyright (C) 2021 Aleksandr D. Goncharov\n"
+		"License: GNU GPL version 3\n"
+		"This is free software: you are free to change and redistribute it.\n"
+		"This program comes with ABSOLUTELY NO WARRANTY.\n");
+}
+
 int main(int argc, char *argv[])
 {
 	/* ncurses settings */
@@ -241,6 +271,7 @@ int main(int argc, char *argv[])
 	/* command line options */
 	const struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
+		{"version", no_argument, NULL, 'v'},
 		{"rows", required_argument, NULL, 'r'},
 		{"cols", required_argument, NULL, 'c'},
 		{"win", required_argument, NULL, 'w'},
@@ -251,9 +282,10 @@ int main(int argc, char *argv[])
 	};
 
 	int result;
-	while((result = getopt_long(argc, argv, "hr:c:w:as:d:", long_options, NULL)) != -1) {
+	while((result = getopt_long(argc, argv, "hvr:c:w:as:d:", long_options, NULL)) != -1) {
 		switch(result) {
 		case 'h': { usage(); return 0; }
+		case 'v': { version(); return 0; }
 		case 'r': { gb_y = atoi(optarg); break; }
 		case 'c': { gb_x = atoi(optarg); break; }
 		case 'w': { gb_lwin = atoi(optarg); break; }
