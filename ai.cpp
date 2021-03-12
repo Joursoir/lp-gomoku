@@ -104,7 +104,6 @@ int AI::MinMax(GameField field, int alpha, int beta, int depth)
 			field.UndoMove(y, x);
 			if(result < score)
 				score = result;
-			fprintf(stderr, "alpha (%d) >= beta (%d)?\n", alpha, score);
 			if(alpha >= score)
 				return score;
 		}
